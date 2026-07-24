@@ -3,13 +3,16 @@
 import Image from "next/image";
 import { FormEvent, useEffect, useState } from "react";
 
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+const asset = (path: string) => `${basePath}${path}`;
+
 const projects = [
-  { src: "/images/kitchen-04.jpg", title: "Кухня с островом", tone: "Серый · дуб", size: "large" },
-  { src: "/images/kitchen-01.jpg", title: "Лаконичная кухня", tone: "Белый · орех", size: "standard" },
-  { src: "/images/kitchen-03.jpg", title: "Светлая кухня", tone: "Белый · дерево", size: "standard" },
-  { src: "/images/kitchen-02.jpg", title: "Кухня в классике", tone: "Серый · латунь", size: "tall" },
-  { src: "/images/kitchen-06.jpg", title: "Компактная кухня", tone: "Серый · чёрный", size: "standard" },
-  { src: "/images/kitchen-07.jpg", title: "Графичная кухня", tone: "Антрацит · белый", size: "wide" },
+  { src: asset("/images/kitchen-04.jpg"), title: "Кухня с островом", tone: "Серый · дуб", size: "large" },
+  { src: asset("/images/kitchen-01.jpg"), title: "Лаконичная кухня", tone: "Белый · орех", size: "standard" },
+  { src: asset("/images/kitchen-03.jpg"), title: "Светлая кухня", tone: "Белый · дерево", size: "standard" },
+  { src: asset("/images/kitchen-02.jpg"), title: "Кухня в классике", tone: "Серый · латунь", size: "tall" },
+  { src: asset("/images/kitchen-06.jpg"), title: "Компактная кухня", tone: "Серый · чёрный", size: "standard" },
+  { src: asset("/images/kitchen-07.jpg"), title: "Графичная кухня", tone: "Антрацит · белый", size: "wide" },
 ];
 
 const categories = [
@@ -78,7 +81,7 @@ export default function Home() {
       <section className="hero" id="top">
         <div className="hero-photo">
           <Image
-            src="/images/kitchen-04.jpg"
+            src={asset("/images/kitchen-04.jpg")}
             alt="Кухня с островом, выполненная мебельной студией Korpus"
             fill
             priority
@@ -181,7 +184,7 @@ export default function Home() {
 
       <section className="feature">
         <div className="feature-photo">
-          <Image src="/images/kitchen-03.jpg" alt="Светлая кухня Korpus" fill sizes="60vw" />
+          <Image src={asset("/images/kitchen-03.jpg")} alt="Светлая кухня Korpus" fill sizes="60vw" />
         </div>
         <div className="feature-copy">
           <div className="eyebrow"><span /> Подход</div>
@@ -231,7 +234,7 @@ export default function Home() {
 
       <section className="calc" id="calc">
         <div className="calc-visual">
-          <Image src="/images/kitchen-02.jpg" alt="Проект кухни Korpus" fill sizes="50vw" />
+          <Image src={asset("/images/kitchen-02.jpg")} alt="Проект кухни Korpus" fill sizes="50vw" />
           <div className="calc-visual-copy">
             <div className="eyebrow light"><span /> Первый шаг</div>
             <h2>Расскажите,<br />что вы задумали</h2>
@@ -243,7 +246,7 @@ export default function Home() {
             <div className="success-message" role="status">
               <span>✓</span>
               <h3>Спасибо!</h3>
-              <p>Это демонстрационная форма. На готовом сайте заявка будет поступать менеджеру KORPUS.</p>
+              <p>В полноценной версии сайта заявка будет отправлена менеджеру.</p>
               <button type="button" onClick={() => setSent(false)}>Заполнить ещё раз</button>
             </div>
           ) : (
