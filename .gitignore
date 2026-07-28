@@ -43,3 +43,10 @@ next-env.d.ts
 /outputs/
 /output/
 /work/
+
+# local presentation and working assets
+/case-assets/
+/case-build/
+/case-output/
+/logo-build/
+/KORPUS-logo-package.zip

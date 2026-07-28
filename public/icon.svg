@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="7 11 233 268" role="img" aria-labelledby="title">
+  <title id="title">Знак KORPUS</title>
+  <g color="#171815">
+  <g fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M92 18H29C20.7 18 14 24.7 14 33v224c0 8.3 6.7 15 15 15h189c8.3 0 15-6.7 15-15v-73c0-8.3-6.7-15-15-15H14"/>
+    <path d="M92 169V33c0-8.3-6.7-15-15-15"/>
+    <path d="M92 94l26-29 26 29V33c0-8.3 6.7-15 15-15h59c8.3 0 15 6.7 15 15v53c0 8.3-6.7 15-15 15h-74v68"/>
+    <path d="M92 169v103M144 169v103M92 207h52M92 237h52"/>
+  </g></g>
+</svg>

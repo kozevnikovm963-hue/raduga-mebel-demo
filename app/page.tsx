@@ -7,12 +7,14 @@ const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const asset = (path: string) => `${basePath}${path}`;
 
 const projects = [
-  { src: asset("/images/kitchen-04.jpg"), title: "Кухня с островом", tone: "Серый · дуб", size: "large" },
-  { src: asset("/images/kitchen-01.jpg"), title: "Лаконичная кухня", tone: "Белый · орех", size: "standard" },
-  { src: asset("/images/kitchen-03.jpg"), title: "Светлая кухня", tone: "Белый · дерево", size: "standard" },
-  { src: asset("/images/kitchen-02.jpg"), title: "Кухня в классике", tone: "Серый · латунь", size: "tall" },
-  { src: asset("/images/kitchen-06.jpg"), title: "Компактная кухня", tone: "Серый · чёрный", size: "standard" },
-  { src: asset("/images/kitchen-07.jpg"), title: "Графичная кухня", tone: "Антрацит · белый", size: "wide" },
+  { src: asset("/images/kitchen-07.jpg"), title: "Графичная кухня", tone: "Антрацит · белый", size: "hero-wide", position: "center" },
+  { src: asset("/images/kitchen-01.jpg"), title: "Лаконичная кухня", tone: "Белый · орех", size: "hero-tall", position: "center 48%" },
+  { src: asset("/images/portfolio-kitchen-01.webp"), title: "Кухня с барной стойкой", tone: "Реализованный проект", size: "gallery-wide", position: "center 52%" },
+  { src: asset("/images/portfolio-wardrobe-01.webp"), title: "Шкаф-купе", tone: "В интерьере", size: "gallery-side", position: "center" },
+  { src: asset("/images/portfolio-kitchen-02.webp"), title: "Светлая кухня", tone: "Общий план", size: "gallery-large", position: "center 54%" },
+  { src: asset("/images/portfolio-wardrobe-02.webp"), title: "Встроенный шкаф", tone: "Реализованный проект", size: "gallery-medium", position: "center 42%" },
+  { src: asset("/images/portfolio-kitchen-03.webp"), title: "Кухня с островом", tone: "Реализованный проект", size: "gallery-detail", position: "center 52%" },
+  { src: asset("/images/portfolio-kitchen-04.webp"), title: "Угловая кухня", tone: "Общий план", size: "gallery-portrait", position: "center 52%" },
 ];
 
 const categories = [
@@ -29,7 +31,7 @@ const steps = [
   ["02", "Замер", "Специалист выезжает, фиксирует размеры и особенности помещения."],
   ["03", "Проект", "Разрабатываем индивидуальное решение и подбираем материалы."],
   ["04", "Производство", "Изготавливаем мебель на собственном производстве."],
-  ["05", "Монтаж", "Собираем и устанавливаем мебель. Монтаж — бесплатно."],
+  ["05", "Монтаж", "Собираем и устанавливаем мебель на объекте."],
 ];
 
 export default function Home() {
@@ -44,6 +46,74 @@ export default function Home() {
     };
   }, [activeImage]);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const desktopMotion = window.matchMedia("(min-width: 901px)");
+    const revealItems = Array.from(document.querySelectorAll<HTMLElement>(".reveal-section"));
+    const parallaxItems = Array.from(document.querySelectorAll<HTMLElement>(".parallax-photo"));
+    let frame = 0;
+
+    root.classList.add("motion-ready");
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add("is-visible");
+          observer.unobserve(entry.target);
+        });
+      },
+      { threshold: 0.08, rootMargin: "0px 0px -7% 0px" },
+    );
+
+    if (reducedMotion.matches) {
+      revealItems.forEach((item) => item.classList.add("is-visible"));
+    } else {
+      revealItems.forEach((item) => observer.observe(item));
+    }
+
+    const updateParallax = () => {
+      frame = 0;
+
+      if (reducedMotion.matches || !desktopMotion.matches) {
+        parallaxItems.forEach((item) => item.style.setProperty("--parallax-y", "0px"));
+        return;
+      }
+
+      parallaxItems.forEach((item) => {
+        const rect = item.getBoundingClientRect();
+        if (rect.bottom < -100 || rect.top > window.innerHeight + 100) return;
+
+        const center = rect.top + rect.height / 2;
+        const progress = (center - window.innerHeight / 2) / (window.innerHeight + rect.height);
+        const offset = Math.max(-12, Math.min(12, progress * -22));
+        item.style.setProperty("--parallax-y", `${offset.toFixed(2)}px`);
+      });
+    };
+
+    const requestParallaxUpdate = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(updateParallax);
+    };
+
+    updateParallax();
+    window.addEventListener("scroll", requestParallaxUpdate, { passive: true });
+    window.addEventListener("resize", requestParallaxUpdate);
+    reducedMotion.addEventListener("change", requestParallaxUpdate);
+    desktopMotion.addEventListener("change", requestParallaxUpdate);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", requestParallaxUpdate);
+      window.removeEventListener("resize", requestParallaxUpdate);
+      reducedMotion.removeEventListener("change", requestParallaxUpdate);
+      desktopMotion.removeEventListener("change", requestParallaxUpdate);
+      if (frame) window.cancelAnimationFrame(frame);
+      root.classList.remove("motion-ready");
+    };
+  }, []);
+
   function submitForm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSent(true);
@@ -53,8 +123,14 @@ export default function Home() {
     <main>
       <header className="site-header">
         <a className="brand" href="#top" aria-label="Korpus — наверх">
-          <span className="brand-mark">K</span>
-          <span>KORPUS</span>
+          <Image
+            className="brand-logo"
+            src={asset("/logo-dark.svg")}
+            alt="KORPUS — мебельная студия"
+            width={760}
+            height={292}
+            priority
+          />
         </a>
         <nav className={menuOpen ? "nav open" : "nav"} aria-label="Основная навигация">
           <a href="#works" onClick={() => setMenuOpen(false)}>Проекты</a>
@@ -79,9 +155,9 @@ export default function Home() {
       </header>
 
       <section className="hero" id="top">
-        <div className="hero-photo">
+        <div className="hero-photo parallax-photo">
           <Image
-            src={asset("/images/kitchen-04.jpg")}
+            src={asset("/images/hero-main.jpg")}
             alt="Кухня с островом, выполненная мебельной студией Korpus"
             fill
             priority
@@ -98,17 +174,13 @@ export default function Home() {
             <a className="text-link light-link" href="#works">Смотреть проекты <span>↓</span></a>
           </div>
         </div>
-        <div className="hero-meta">
-          <span>43°36′ с. ш.</span>
-          <span>Киров</span>
-        </div>
         <div className="hero-counter">
           <strong>с 2006</strong>
           <span>создаём мебель<br />по вашим размерам</span>
         </div>
       </section>
 
-      <section className="intro section-pad">
+      <section className="intro section-pad reveal-section">
         <div className="eyebrow"><span /> О студии</div>
         <div className="intro-copy">
           <p className="lead">Мы проектируем мебель не отдельно от интерьера, а как его естественное продолжение.</p>
@@ -120,12 +192,12 @@ export default function Home() {
         <div className="proof-grid">
           <div><strong>2006</strong><span>год основания</span></div>
           <div><strong>100%</strong><span>индивидуальный проект</span></div>
-          <div><strong>0₽</strong><span>монтаж мебели</span></div>
+          <div><strong>Киров</strong><span>собственное производство</span></div>
           <div><strong>5</strong><span>этапов до результата</span></div>
         </div>
       </section>
 
-      <section className="works section-pad" id="works">
+      <section className="works section-pad reveal-section" id="works">
         <div className="section-heading">
           <div>
             <div className="eyebrow"><span /> Выполненные проекты</div>
@@ -146,7 +218,8 @@ export default function Home() {
                 src={project.src}
                 alt={`${project.title}, работа Korpus`}
                 fill
-                sizes="(max-width: 700px) 100vw, 50vw"
+                sizes="(max-width: 700px) 100vw, (max-width: 1050px) 70vw, 65vw"
+                style={{ objectPosition: project.position ?? "center" }}
               />
               <span className="project-index">0{index + 1}</span>
               <span className="project-caption">
@@ -162,7 +235,7 @@ export default function Home() {
         </a>
       </section>
 
-      <section className="categories section-pad" id="categories">
+      <section className="categories section-pad reveal-section" id="categories">
         <div className="section-heading compact">
           <div>
             <div className="eyebrow light"><span /> Направления</div>
@@ -182,9 +255,9 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="feature">
-        <div className="feature-photo">
-          <Image src={asset("/images/kitchen-03.jpg")} alt="Светлая кухня Korpus" fill sizes="60vw" />
+      <section className="feature reveal-section">
+        <div className="feature-photo parallax-photo">
+          <Image src={asset("/images/kitchen-taupe-feature.jpg")} alt="Кухня KORPUS в тёплом сером оттенке" fill sizes="60vw" />
         </div>
         <div className="feature-copy">
           <div className="eyebrow"><span /> Подход</div>
@@ -194,12 +267,12 @@ export default function Home() {
             <li><span>01</span> Собственное производство</li>
             <li><span>02</span> Проекты любой сложности</li>
             <li><span>03</span> Заключение договора</li>
-            <li><span>04</span> Рассрочка от производителя</li>
+            <li><span>04</span> Подбор материалов и комплектации</li>
           </ul>
         </div>
       </section>
 
-      <section className="process section-pad" id="process">
+      <section className="process section-pad reveal-section" id="process">
         <div className="section-heading">
           <div>
             <div className="eyebrow"><span /> Путь проекта</div>
@@ -218,23 +291,28 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="review-section section-pad">
+      <section className="review-section section-pad reveal-section">
+        <div className="review-heading">Отзывы клиентов</div>
         <div className="review-quote">“</div>
-        <blockquote>
-          Второй раз заказываю мебель здесь. Кухню установили раньше, чем ожидалось — всё отлично. Спасибо за добросовестную работу и индивидуальный подход в подборе материалов.
-        </blockquote>
+        <div className="review-body">
+          <span className="review-line" aria-hidden="true" />
+          <blockquote>
+            Второй раз заказываю мебель здесь. Кухню установили раньше, чем ожидалось — всё отлично. Спасибо за добросовестную работу и индивидуальный подход в подборе материалов.
+          </blockquote>
+          <span className="review-line" aria-hidden="true" />
+        </div>
         <div className="review-author">
           <span>Евгения Ф.</span>
           <span>Отзыв клиента · VK</span>
         </div>
-        <a className="text-link" href="https://vk.ru/topic-169502771_39371654" target="_blank" rel="noreferrer">
-          Читать все отзывы <span>↗</span>
+        <a className="review-link" href="https://vk.ru/topic-169502771_39371654" target="_blank" rel="noreferrer">
+          Смотреть все отзывы <span>→</span>
         </a>
       </section>
 
-      <section className="calc" id="calc">
-        <div className="calc-visual">
-          <Image src={asset("/images/kitchen-02.jpg")} alt="Проект кухни Korpus" fill sizes="50vw" />
+      <section className="calc reveal-section" id="calc">
+        <div className="calc-visual parallax-photo">
+          <Image src={asset("/images/kitchen-marble-form.jpg")} alt="Проект кухни KORPUS" fill sizes="50vw" />
           <div className="calc-visual-copy">
             <div className="eyebrow light"><span /> Первый шаг</div>
             <h2>Расскажите,<br />что вы задумали</h2>
@@ -287,7 +365,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer id="contacts">
+      <footer className="reveal-section" id="contacts">
         <div className="footer-top">
           <div>
             <div className="eyebrow light"><span /> Контакты</div>
@@ -317,13 +395,20 @@ export default function Home() {
           <div>
             <span className="footer-label">Социальные сети</span>
             <a href="https://vk.ru/ms_korpus" target="_blank" rel="noreferrer">ВКонтакте ↗</a>
-            <a href="https://мебелькиров43.рф/" target="_blank" rel="noreferrer">Текущий сайт ↗</a>
           </div>
         </div>
         <div className="footer-bottom">
-          <a className="brand footer-brand" href="#top"><span className="brand-mark">K</span><span>KORPUS</span></a>
+          <a className="brand footer-brand" href="#top" aria-label="KORPUS — наверх">
+            <Image
+              className="brand-logo"
+              src={asset("/logo-dark.svg")}
+              alt="KORPUS — мебельная студия"
+              width={760}
+              height={292}
+            />
+          </a>
           <span>Мебельная студия · Киров</span>
-          <span>© 2026 · Демонстрационный концепт</span>
+          <span>© 2026 · KORPUS</span>
         </div>
       </footer>
 
