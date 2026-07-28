@@ -172,7 +172,7 @@ export default function Home() {
           <h1>Мебель,<br />созданная для<br /><em>вашего пространства</em></h1>
           <p>Индивидуальное проектирование и собственное производство корпусной мебели с 2006 года.</p>
           <div className="hero-buttons">
-            <a className="button button-light" href="#calc">Рассчитать стоимость <span>↗</span></a>
+            <a className="button button-light" href="#calc">Рассчитать стоимость <span>↗︎</span></a>
             <a className="text-link light-link" href="#works">Смотреть проекты <span>↓</span></a>
           </div>
         </div>
@@ -228,12 +228,12 @@ export default function Home() {
                 <strong>{project.title}</strong>
                 <small>{project.tone}</small>
               </span>
-              <span className="project-open">↗</span>
+              <span className="project-open">↗︎</span>
             </button>
           ))}
         </div>
         <a className="button button-dark centered" href="https://vk.ru/ms_korpus" target="_blank" rel="noreferrer">
-          Больше работ в VK <span>↗</span>
+          Больше работ в VK <span>↗︎</span>
         </a>
       </section>
 
@@ -251,7 +251,7 @@ export default function Home() {
               <span className="category-number">{number}</span>
               <strong>{title}</strong>
               <span className="category-description">{description}</span>
-              <span className="category-arrow">↗</span>
+              <span className="category-arrow">↗︎</span>
             </a>
           ))}
         </div>
@@ -360,7 +360,7 @@ export default function Home() {
                 <input name="file" type="file" accept="image/*,.pdf" />
                 <span className="file-control"><b>＋</b> Прикрепить файл</span>
               </label>
-              <button className="submit-button" type="submit">Получить расчёт <span>↗</span></button>
+              <button className="submit-button" type="submit">Получить расчёт <span>↗︎</span></button>
               <p className="form-note">Нажимая кнопку, вы соглашаетесь на обработку персональных данных.</p>
             </form>
           )}
@@ -374,7 +374,7 @@ export default function Home() {
             <h2>Давайте обсудим<br /><em>ваш проект</em></h2>
           </div>
           <a className="round-link" href="https://vk.me/ms_korpus" target="_blank" rel="noreferrer">
-            Написать<br />в VK <span>↗</span>
+            Написать<br />в VK <span>↗︎</span>
           </a>
         </div>
         <div className="footer-grid">
@@ -396,7 +396,7 @@ export default function Home() {
           </div>
           <div>
             <span className="footer-label">Социальные сети</span>
-            <a href="https://vk.ru/ms_korpus" target="_blank" rel="noreferrer">ВКонтакте ↗</a>
+            <a href="https://vk.ru/ms_korpus" target="_blank" rel="noreferrer">ВКонтакте ↗︎</a>
           </div>
         </div>
         <div className="footer-bottom">
