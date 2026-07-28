@@ -8,13 +8,15 @@ const asset = (path: string) => `${basePath}${path}`;
 
 const projects = [
   { src: asset("/images/kitchen-07.jpg"), title: "Графичная кухня", tone: "Антрацит · белый", size: "hero-wide", position: "center" },
-  { src: asset("/images/kitchen-01.jpg"), title: "Лаконичная кухня", tone: "Белый · орех", size: "hero-tall", position: "center 48%" },
-  { src: asset("/images/portfolio-kitchen-01.webp"), title: "Кухня с барной стойкой", tone: "Реализованный проект", size: "gallery-wide", position: "center 52%" },
-  { src: asset("/images/portfolio-wardrobe-01.webp"), title: "Шкаф-купе", tone: "В интерьере", size: "gallery-side", position: "center" },
-  { src: asset("/images/portfolio-kitchen-02.webp"), title: "Светлая кухня", tone: "Общий план", size: "gallery-large", position: "center 54%" },
+  { src: asset("/images/portfolio-wardrobe-01.webp"), title: "Шкаф-купе", tone: "В интерьере", size: "hero-tall", position: "center" },
+  { src: asset("/images/kitchen-01.jpg"), title: "Лаконичная кухня", tone: "Белый · орех", size: "gallery-wide", position: "center 48%" },
+  { src: asset("/images/portfolio-wardrobe-open.webp"), title: "Система хранения", tone: "Внутреннее наполнение", size: "gallery-side", position: "center 44%" },
+  { src: asset("/images/portfolio-kitchen-01.webp"), title: "Кухня с барной стойкой", tone: "Реализованный проект", size: "gallery-large", position: "center 52%" },
   { src: asset("/images/portfolio-wardrobe-02.webp"), title: "Встроенный шкаф", tone: "Реализованный проект", size: "gallery-medium", position: "center 42%" },
-  { src: asset("/images/portfolio-kitchen-03.webp"), title: "Кухня с островом", tone: "Реализованный проект", size: "gallery-detail", position: "center 52%" },
-  { src: asset("/images/portfolio-kitchen-04.webp"), title: "Угловая кухня", tone: "Общий план", size: "gallery-portrait", position: "center 52%" },
+  { src: asset("/images/portfolio-kitchen-02.webp"), title: "Светлая кухня", tone: "Общий план", size: "gallery-detail", position: "center 54%" },
+  { src: asset("/images/portfolio-wardrobe-03.webp"), title: "Шкаф в прихожей", tone: "Реализованный проект", size: "gallery-portrait", position: "center 28%" },
+  { src: asset("/images/portfolio-kitchen-03.webp"), title: "Кухня с островом", tone: "Реализованный проект", size: "gallery-wide", position: "center 52%" },
+  { src: asset("/images/portfolio-kitchen-04.webp"), title: "Угловая кухня", tone: "Общий план", size: "gallery-side", position: "center 52%" },
 ];
 
 const categories = [
@@ -221,7 +223,7 @@ export default function Home() {
                 sizes="(max-width: 700px) 100vw, (max-width: 1050px) 70vw, 65vw"
                 style={{ objectPosition: project.position ?? "center" }}
               />
-              <span className="project-index">0{index + 1}</span>
+              <span className="project-index">{String(index + 1).padStart(2, "0")}</span>
               <span className="project-caption">
                 <strong>{project.title}</strong>
                 <small>{project.tone}</small>
