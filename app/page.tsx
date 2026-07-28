@@ -14,7 +14,7 @@ const projects = [
   { src: asset("/images/portfolio-kitchen-01.webp"), title: "Кухня с барной стойкой", tone: "Реализованный проект", size: "gallery-large", position: "center 52%" },
   { src: asset("/images/portfolio-wardrobe-02.webp"), title: "Встроенный шкаф", tone: "Реализованный проект", size: "gallery-medium", position: "center 42%" },
   { src: asset("/images/portfolio-kitchen-02.webp"), title: "Светлая кухня", tone: "Общий план", size: "gallery-detail", position: "center 54%" },
-  { src: asset("/images/portfolio-wardrobe-03.webp"), title: "Шкаф в прихожей", tone: "Реализованный проект", size: "gallery-portrait", position: "center 28%" },
+  { src: asset("/images/portfolio-wardrobe-clean.webp"), title: "Шкаф в прихожей", tone: "Реализованный проект", size: "gallery-portrait", position: "center 44%" },
   { src: asset("/images/portfolio-kitchen-03.webp"), title: "Кухня с островом", tone: "Реализованный проект", size: "gallery-wide", position: "center 52%" },
   { src: asset("/images/portfolio-kitchen-04.webp"), title: "Угловая кухня", tone: "Общий план", size: "gallery-side", position: "center 52%" },
 ];
