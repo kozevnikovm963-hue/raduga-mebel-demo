@@ -132,8 +132,10 @@ img {
 }
 
 .phone {
-  font-size: 13px;
-  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.96);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.035em;
 }
 
 .header-cta {
@@ -1192,6 +1194,11 @@ footer {
 
 .footer-grid a {
   border-bottom: 1px solid transparent;
+}
+
+.footer-grid a[href^="tel:"] {
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
 }
 
 .footer-grid a:hover {
