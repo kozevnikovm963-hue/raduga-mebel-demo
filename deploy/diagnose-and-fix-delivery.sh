@@ -112,7 +112,13 @@ UNIT_STDERR="$(systemctl show "$SERVICE_NAME" --property=StandardError --value)"
 [[ "$UNIT_STDERR" == "journal" ]] || fail "The active service stderr is not journald."
 
 log "Checking health"
-HEALTH_RESPONSE="$(curl --silent --show-error --fail http://127.0.0.1:3000/api/health)"
+HEALTH_RESPONSE=""
+for attempt in {1..40}; do
+  if HEALTH_RESPONSE="$(curl --silent --show-error --fail http://127.0.0.1:3000/api/health 2>/dev/null)"; then
+    break
+  fi
+  sleep 0.25
+done
 [[ "$HEALTH_RESPONSE" == *'"ok":true'* ]] || fail "Backend health check returned an unexpected response."
 printf "/api/health: OK\n"
 
