@@ -387,8 +387,8 @@ async function diagnoseVk() {
     }
     console.log("VK GROUP ACCESS: OK");
 
-    await vkCall("messages.getConversation", {
-      peer_id: activeEnv.get("VK_RECEIVER_ID"),
+    await vkCall("messages.getConversationsById", {
+      peer_ids: activeEnv.get("VK_RECEIVER_ID"),
     });
     console.log("VK RECEIVER: OK");
 
