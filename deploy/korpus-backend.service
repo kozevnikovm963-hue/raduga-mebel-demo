@@ -1,0 +1,24 @@
+[Unit]
+Description=KORPUS application form backend
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=korpus
+Group=korpus
+WorkingDirectory=/var/www/korpus
+EnvironmentFile=/var/www/korpus/.env
+ExecStart=/usr/bin/node /var/www/korpus/dist-server/index.mjs
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=20
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+UMask=0077
+MemoryMax=512M
+
+[Install]
+WantedBy=multi-user.target

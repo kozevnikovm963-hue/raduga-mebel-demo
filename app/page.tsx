@@ -2,9 +2,16 @@
 
 import Image from "next/image";
 import { FormEvent, useEffect, useState } from "react";
+import {
+  type ApplicationErrors,
+  type ApplicationInput,
+  validateApplicationInput,
+  validatePhotoList,
+} from "@/lib/forms/validation";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const asset = (path: string) => `${basePath}${path}`;
+const formEndpoint = process.env.NEXT_PUBLIC_FORM_ENDPOINT?.trim() ?? "";
 
 const projects = [
   { src: asset("/images/kitchen-07.jpg"), title: "Графичная кухня", tone: "Антрацит · белый", size: "hero-wide", position: "center" },
@@ -40,6 +47,12 @@ export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeImage, setActiveImage] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const [successMessage, setSuccessMessage] = useState(
+    "В полноценной версии сайта заявка будет отправлена менеджеру.",
+  );
+  const [submitting, setSubmitting] = useState(false);
+  const [formErrors, setFormErrors] = useState<ApplicationErrors>({});
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   useEffect(() => {
     document.body.style.overflow = activeImage ? "hidden" : "";
@@ -116,9 +129,72 @@ export default function Home() {
     };
   }, []);
 
-  function submitForm(event: FormEvent<HTMLFormElement>) {
+  async function submitForm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSent(true);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const raw: ApplicationInput = {
+      name: String(formData.get("name") ?? ""),
+      phone: String(formData.get("phone") ?? ""),
+      furnitureType: String(formData.get("furnitureType") ?? ""),
+      comment: String(formData.get("comment") ?? ""),
+      website: String(formData.get("website") ?? ""),
+    };
+    const validation = validateApplicationInput(raw);
+    const submittedFiles = formData
+      .getAll("photos")
+      .filter((value): value is File => value instanceof File && value.size > 0);
+    const photoError = validatePhotoList(submittedFiles);
+    const errors: ApplicationErrors = {
+      ...validation.errors,
+      ...(photoError ? { photos: photoError } : {}),
+    };
+
+    setFormErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
+    setSubmitting(true);
+    try {
+      if (formEndpoint) {
+        const response = await fetch(formEndpoint, {
+          method: "POST",
+          headers: { Accept: "application/json" },
+          body: formData,
+        });
+        const result = (await response.json()) as {
+          message?: string;
+          errors?: ApplicationErrors;
+        };
+
+        if (!response.ok) {
+          setFormErrors({
+            ...(result.errors ?? {}),
+            form: result.message ?? "Не удалось отправить заявку. Попробуйте ещё раз или позвоните нам.",
+          });
+          return;
+        }
+        setSuccessMessage(result.message ?? "Спасибо! Заявка успешно отправлена менеджеру.");
+      } else {
+        await new Promise((resolve) => window.setTimeout(resolve, 650));
+        setSuccessMessage("В полноценной версии сайта заявка будет отправлена менеджеру.");
+      }
+      form.reset();
+      setSelectedFiles([]);
+      setFormErrors({});
+      setSent(true);
+    } catch {
+      setFormErrors({ form: "Не удалось отправить заявку. Попробуйте ещё раз или позвоните нам." });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  function handleFiles(input: HTMLInputElement) {
+    const nextFiles = input.files ? Array.from(input.files) : [];
+    const error = validatePhotoList(nextFiles);
+    if (error) input.value = "";
+    setSelectedFiles(error ? [] : nextFiles);
+    setFormErrors((current) => ({ ...current, photos: error ?? undefined }));
   }
 
   return (
@@ -127,10 +203,10 @@ export default function Home() {
         <a className="brand" href="#top" aria-label="Korpus — наверх">
           <Image
             className="brand-logo"
-            src={asset("/logo-dark.svg")}
+            src={asset("/korpus-final.svg")}
             alt="KORPUS — мебельная студия"
-            width={760}
-            height={292}
+            width={826}
+            height={326}
             priority
           />
         </a>
@@ -326,27 +402,50 @@ export default function Home() {
             <div className="success-message" role="status">
               <span>✓</span>
               <h3>Спасибо!</h3>
-              <p>В полноценной версии сайта заявка будет отправлена менеджеру.</p>
+              <p>{successMessage}</p>
               <button type="button" onClick={() => setSent(false)}>Заполнить ещё раз</button>
             </div>
           ) : (
-            <form onSubmit={submitForm}>
+            <form onSubmit={submitForm} noValidate>
               <div className="form-heading">
                 <span>Заявка на расчёт</span>
                 <small>Ответим и уточним детали</small>
               </div>
               <label>
                 <span>Ваше имя</span>
-                <input name="name" placeholder="Как к вам обращаться?" required />
+                <input
+                  name="name"
+                  placeholder="Как к вам обращаться?"
+                  autoComplete="name"
+                  aria-invalid={Boolean(formErrors.name)}
+                  aria-describedby={formErrors.name ? "name-error" : undefined}
+                  required
+                />
+                {formErrors.name && <small className="field-error" id="name-error">{formErrors.name}</small>}
               </label>
               <label>
                 <span>Телефон</span>
-                <input name="phone" type="tel" placeholder="+7 999 000-00-00" required />
+                <input
+                  name="phone"
+                  type="tel"
+                  inputMode="tel"
+                  placeholder="+7 999 000-00-00"
+                  autoComplete="tel"
+                  aria-invalid={Boolean(formErrors.phone)}
+                  aria-describedby={formErrors.phone ? "phone-error" : undefined}
+                  required
+                />
+                {formErrors.phone && <small className="field-error" id="phone-error">{formErrors.phone}</small>}
               </label>
               <label>
                 <span>Что хотите заказать?</span>
-                <select name="type" defaultValue="">
-                  <option value="" disabled>Выберите тип мебели</option>
+                <select
+                  name="furnitureType"
+                  defaultValue=""
+                  aria-invalid={Boolean(formErrors.furnitureType)}
+                  aria-describedby={formErrors.furnitureType ? "furniture-error" : undefined}
+                >
+                  <option value="">Выберите тип мебели</option>
                   <option>Кухня</option>
                   <option>Шкаф</option>
                   <option>Гардеробная</option>
@@ -354,14 +453,51 @@ export default function Home() {
                   <option>Детская</option>
                   <option>Другое</option>
                 </select>
+                {formErrors.furnitureType && <small className="field-error" id="furniture-error">{formErrors.furnitureType}</small>}
+              </label>
+              <label>
+                <span>Комментарий или примерные размеры</span>
+                <textarea
+                  name="comment"
+                  placeholder="Например: кухня 3,2 × 2,4 м"
+                  maxLength={1000}
+                  rows={3}
+                  aria-invalid={Boolean(formErrors.comment)}
+                  aria-describedby={formErrors.comment ? "comment-error" : "comment-hint"}
+                />
+                <small className="field-hint" id="comment-hint">До 1000 символов</small>
+                {formErrors.comment && <small className="field-error" id="comment-error">{formErrors.comment}</small>}
               </label>
               <label className="file-label">
-                <span>Фото или размеры</span>
-                <input name="file" type="file" accept="image/*,.pdf" />
-                <span className="file-control"><b>＋</b> Прикрепить файл</span>
+                <span>Фотографии</span>
+                <input
+                  name="photos"
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                  multiple
+                  onChange={(event) => handleFiles(event.currentTarget)}
+                  aria-invalid={Boolean(formErrors.photos)}
+                  aria-describedby="photos-hint"
+                />
+                <span className="file-control"><b>＋</b> Прикрепить фотографии</span>
+                <small className="field-hint" id="photos-hint">До 5 файлов JPG, PNG или WEBP · до 10 МБ каждый</small>
+                {selectedFiles.length > 0 && (
+                  <span className="selected-files">{selectedFiles.map((file) => file.name).join(" · ")}</span>
+                )}
+                {formErrors.photos && <small className="field-error">{formErrors.photos}</small>}
               </label>
-              <button className="submit-button" type="submit">Получить расчёт <span>↗︎</span></button>
-              <p className="form-note">Нажимая кнопку, вы соглашаетесь на обработку персональных данных.</p>
+              <div className="honeypot-field" aria-hidden="true">
+                <label htmlFor="website">Ваш сайт</label>
+                <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+              </div>
+              {formErrors.form && <p className="form-error" role="alert">{formErrors.form}</p>}
+              <button className="submit-button" type="submit" disabled={submitting}>
+                {submitting ? "Отправляем…" : "Получить расчёт"} <span>↗︎</span>
+              </button>
+              <p className="form-note">
+                Нажимая кнопку «Получить расчёт», вы соглашаетесь с{" "}
+                <a href={asset("/privacy/")}>политикой обработки персональных данных</a>.
+              </p>
             </form>
           )}
         </div>
@@ -403,14 +539,14 @@ export default function Home() {
           <a className="brand footer-brand" href="#top" aria-label="KORPUS — наверх">
             <Image
               className="brand-logo"
-              src={asset("/logo-dark.svg")}
+              src={asset("/korpus-final.svg")}
               alt="KORPUS — мебельная студия"
-              width={760}
-              height={292}
+              width={826}
+              height={326}
             />
           </a>
           <span>Мебельная студия · Киров</span>
-          <span>© 2026 · KORPUS</span>
+          <span><a href={asset("/privacy/")}>Политика обработки данных</a><br />© 2026 · KORPUS</span>
         </div>
       </footer>
 
