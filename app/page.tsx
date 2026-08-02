@@ -1,17 +1,21 @@
 "use client";
 
 import Image from "next/image";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import {
   type ApplicationErrors,
   type ApplicationInput,
   validateApplicationInput,
   validatePhotoList,
 } from "@/lib/forms/validation";
+import {
+  ApplicationSubmissionError,
+  sendApplication,
+  SUBMISSION_ERROR_MESSAGE,
+} from "@/lib/forms/submit-application";
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const asset = (path: string) => `${basePath}${path}`;
-const formEndpoint = process.env.NEXT_PUBLIC_FORM_ENDPOINT?.trim() ?? "";
 
 const projects = [
   { src: asset("/images/kitchen-07.jpg"), title: "Графичная кухня", tone: "Антрацит · белый", size: "hero-wide", position: "center" },
@@ -47,12 +51,11 @@ export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeImage, setActiveImage] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
-  const [successMessage, setSuccessMessage] = useState(
-    "В полноценной версии сайта заявка будет отправлена менеджеру.",
-  );
+  const [successMessage, setSuccessMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<ApplicationErrors>({});
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const submitInFlight = useRef(false);
 
   useEffect(() => {
     document.body.style.overflow = activeImage ? "hidden" : "";
@@ -131,6 +134,8 @@ export default function Home() {
 
   async function submitForm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitInFlight.current) return;
+
     const form = event.currentTarget;
     const formData = new FormData(form);
     const raw: ApplicationInput = {
@@ -145,46 +150,32 @@ export default function Home() {
       .getAll("photos")
       .filter((value): value is File => value instanceof File && value.size > 0);
     const photoError = validatePhotoList(submittedFiles);
+    const consentGiven = formData.get("consent") === "accepted";
     const errors: ApplicationErrors = {
       ...validation.errors,
       ...(photoError ? { photos: photoError } : {}),
+      ...(!consentGiven ? { consent: "Подтвердите согласие с политикой обработки персональных данных." } : {}),
     };
 
     setFormErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
+    submitInFlight.current = true;
     setSubmitting(true);
     try {
-      if (formEndpoint) {
-        const response = await fetch(formEndpoint, {
-          method: "POST",
-          headers: { Accept: "application/json" },
-          body: formData,
-        });
-        const result = (await response.json()) as {
-          message?: string;
-          errors?: ApplicationErrors;
-        };
-
-        if (!response.ok) {
-          setFormErrors({
-            ...(result.errors ?? {}),
-            form: result.message ?? "Не удалось отправить заявку. Попробуйте ещё раз или позвоните нам.",
-          });
-          return;
-        }
-        setSuccessMessage(result.message ?? "Спасибо! Заявка успешно отправлена менеджеру.");
-      } else {
-        await new Promise((resolve) => window.setTimeout(resolve, 650));
-        setSuccessMessage("В полноценной версии сайта заявка будет отправлена менеджеру.");
-      }
+      const message = await sendApplication(formData);
+      setSuccessMessage(message);
       form.reset();
       setSelectedFiles([]);
       setFormErrors({});
       setSent(true);
-    } catch {
-      setFormErrors({ form: "Не удалось отправить заявку. Попробуйте ещё раз или позвоните нам." });
+    } catch (error) {
+      setFormErrors({
+        ...(error instanceof ApplicationSubmissionError ? error.fieldErrors : {}),
+        form: SUBMISSION_ERROR_MESSAGE,
+      });
     } finally {
+      submitInFlight.current = false;
       setSubmitting(false);
     }
   }
@@ -491,13 +482,26 @@ export default function Home() {
                 <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
               </div>
               {formErrors.form && <p className="form-error" role="alert">{formErrors.form}</p>}
+              <label className="consent-label">
+                <input
+                  name="consent"
+                  type="checkbox"
+                  value="accepted"
+                  aria-invalid={Boolean(formErrors.consent)}
+                  aria-describedby={formErrors.consent ? "consent-error" : undefined}
+                  required
+                />
+                <span>
+                  Я согласен с{" "}
+                  <a href={asset("/privacy/")}>политикой обработки персональных данных</a>
+                </span>
+              </label>
+              {formErrors.consent && (
+                <small className="field-error consent-error" id="consent-error">{formErrors.consent}</small>
+              )}
               <button className="submit-button" type="submit" disabled={submitting}>
                 {submitting ? "Отправляем…" : "Получить расчёт"} <span>↗︎</span>
               </button>
-              <p className="form-note">
-                Нажимая кнопку «Получить расчёт», вы соглашаетесь с{" "}
-                <a href={asset("/privacy/")}>политикой обработки персональных данных</a>.
-              </p>
             </form>
           )}
         </div>

@@ -27,7 +27,7 @@ export type ApplicationInput = {
   website: string;
 };
 
-export type ApplicationField = "name" | "phone" | "furnitureType" | "comment" | "photos" | "form";
+export type ApplicationField = "name" | "phone" | "furnitureType" | "comment" | "photos" | "consent" | "form";
 export type ApplicationErrors = Partial<Record<ApplicationField, string>>;
 
 export type PhotoLike = {

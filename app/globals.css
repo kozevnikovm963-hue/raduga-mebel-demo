@@ -1143,14 +1143,41 @@ textarea {
   line-height: 1.5;
 }
 
-.form-note {
+.consent-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 20px 0 0;
   color: var(--muted);
+  cursor: pointer;
   font-size: 10px;
-  text-align: center;
+  line-height: 1.45;
 }
 
-.form-note a {
+.consent-label input {
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--ink);
+}
+
+.consent-label > span:first-of-type {
+  display: inline;
+  margin: 0;
+  color: inherit;
+  font-size: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.consent-label a {
   border-bottom: 1px solid currentColor;
+}
+
+.consent-error {
+  margin-top: 7px;
 }
 
 .success-message {
