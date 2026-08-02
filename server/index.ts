@@ -1,5 +1,7 @@
+import { randomUUID } from "node:crypto";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { handleApplicationForm } from "@/server/forms/application-handler";
+import { logEvent, safeRequestError } from "@/server/logging";
 
 const host = process.env.HOST?.trim() || "127.0.0.1";
 const port = parsePort(process.env.PORT);
@@ -50,8 +52,18 @@ const server = createServer(async (request, response) => {
     return;
   }
 
+  const requestId = randomUUID();
   const contentLength = Number(request.headers["content-length"] ?? "0");
+  logEvent("info", "application.received", {
+    requestId,
+    hasContentLength: Number.isFinite(contentLength) && contentLength > 0,
+  });
+
   if (Number.isFinite(contentLength) && contentLength > maxRequestSize) {
+    logEvent("warn", "application.rejected", {
+      requestId,
+      code: "REQUEST_TOO_LARGE",
+    });
     json(response, 413, { ok: false, message: "Общий размер вложений слишком большой." });
     request.resume();
     return;
@@ -65,11 +77,18 @@ const server = createServer(async (request, response) => {
       duplex: "half",
     } as RequestInit & { duplex: "half" });
     const formData = await webRequest.formData();
-    const result = await handleApplicationForm(formData, { ip: clientIp(request) });
+    const result = await handleApplicationForm(formData, {
+      ip: clientIp(request),
+      requestId,
+    });
     json(response, result.ok ? 200 : result.status, result);
   } catch (error) {
-    const message = error instanceof Error ? error.message.slice(0, 300) : "Unknown request error";
-    console.error("[application] request failed:", message);
+    const safeError = safeRequestError(error);
+    logEvent("error", "application.failed", {
+      requestId,
+      code: safeError.code,
+      message: safeError.message,
+    });
     json(response, 400, { ok: false, message: "Не удалось обработать форму. Проверьте данные и файлы." });
   }
 });
@@ -79,14 +98,20 @@ server.headersTimeout = 125_000;
 server.keepAliveTimeout = 5_000;
 
 server.listen(port, host, () => {
-  process.stdout.write(`KORPUS backend listening on ${host}:${port}\n`);
+  logEvent("info", "backend.started", {
+    host,
+    port,
+  });
 });
 
 function shutdown(signal: string): void {
-  process.stdout.write(`KORPUS backend received ${signal}, stopping\n`);
+  logEvent("info", "backend.stopping", { signal });
   server.close((error) => {
     if (error) {
-      console.error("[server] shutdown failed:", error.message);
+      logEvent("error", "backend.stop_failed", {
+        code: "SERVER_SHUTDOWN_ERROR",
+        message: "Backend shutdown failed",
+      });
       process.exitCode = 1;
     }
   });

@@ -152,7 +152,7 @@ export async function sendApplicationEmail(
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<IntegrationResult> {
   const config = smtpConfig(env);
-  if (!config) return { status: "skipped" };
+  if (!config) return { status: "skipped", code: "CONFIG_MISSING" };
 
   const message = await createMimeMessage(data, photos, config);
   await sendViaSecureSmtp(config, message);

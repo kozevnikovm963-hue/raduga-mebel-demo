@@ -11,6 +11,7 @@ import {
 import { checkRateLimit } from "@/server/forms/rate-limit";
 import { sendApplicationEmail } from "@/server/integrations/email";
 import { sendApplicationToVk } from "@/server/integrations/vk";
+import { logEvent, safeIntegrationError, safeRequestError } from "@/server/logging";
 
 export type ApplicationHandlerResult =
   | { ok: true; message: string }
@@ -23,10 +24,14 @@ function stringValue(formData: FormData, key: string): string {
 
 export async function handleApplicationForm(
   formData: FormData,
-  request: { ip: string },
+  request: { ip: string; requestId: string },
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<ApplicationHandlerResult> {
   if (!checkRateLimit(request.ip)) {
+    logEvent("warn", "application.rejected", {
+      requestId: request.requestId,
+      code: "RATE_LIMITED",
+    });
     return {
       ok: false,
       status: 429,
@@ -43,11 +48,19 @@ export async function handleApplicationForm(
   };
 
   if (raw.website.trim()) {
+    logEvent("info", "application.discarded", {
+      requestId: request.requestId,
+      code: "HONEYPOT",
+    });
     return { ok: true, message: "Спасибо! Заявка принята." };
   }
 
   const validation = validateApplicationInput(raw);
   if (Object.keys(validation.errors).length > 0) {
+    logEvent("warn", "application.rejected", {
+      requestId: request.requestId,
+      code: "VALIDATION_ERROR",
+    });
     return {
       ok: false,
       status: 400,
@@ -67,17 +80,17 @@ export async function handleApplicationForm(
       sendApplicationEmail(validation.data, prepared.photos, env),
     ]);
 
-    if (vkResult.status === "rejected") {
-      console.error("[application] VK delivery failed:", safeError(vkResult.reason));
-    }
-    if (emailResult.status === "rejected") {
-      console.error("[application] email delivery failed:", safeError(emailResult.reason));
-    }
+    logChannelResult(request.requestId, "vk", vkResult);
+    logChannelResult(request.requestId, "email", emailResult);
 
     const vkSent = vkResult.status === "fulfilled" && vkResult.value.status === "sent";
     const emailSent = emailResult.status === "fulfilled" && emailResult.value.status === "sent";
 
     if (!vkSent && !emailSent) {
+      logEvent("error", "application.failed", {
+        requestId: request.requestId,
+        code: "ALL_DELIVERY_CHANNELS_FAILED",
+      });
       return {
         ok: false,
         status: 503,
@@ -85,9 +98,18 @@ export async function handleApplicationForm(
       };
     }
 
+    logEvent("info", "application.accepted", {
+      requestId: request.requestId,
+      vkSent,
+      emailSent,
+    });
     return { ok: true, message: "Спасибо! Заявка успешно отправлена менеджеру." };
   } catch (error) {
     if (error instanceof PhotoValidationError) {
+      logEvent("warn", "application.rejected", {
+        requestId: request.requestId,
+        code: "PHOTO_VALIDATION_ERROR",
+      });
       return {
         ok: false,
         status: 400,
@@ -95,7 +117,12 @@ export async function handleApplicationForm(
         errors: { photos: error.message },
       };
     }
-    console.error("[application] processing failed:", safeError(error));
+    const safeError = safeRequestError(error);
+    logEvent("error", "application.failed", {
+      requestId: request.requestId,
+      code: safeError.code,
+      message: safeError.message,
+    });
     return {
       ok: false,
       status: 500,
@@ -106,6 +133,27 @@ export async function handleApplicationForm(
   }
 }
 
-function safeError(error: unknown): string {
-  return error instanceof Error ? error.message.slice(0, 300) : "Unknown delivery error";
+function logChannelResult(
+  requestId: string,
+  channel: "vk" | "email",
+  result: PromiseSettledResult<{ status: "sent" } | { status: "skipped"; code: "CONFIG_MISSING" }>,
+): void {
+  if (result.status === "rejected") {
+    const safeError = safeIntegrationError(channel, result.reason);
+    logEvent("error", "application.channel", {
+      requestId,
+      channel,
+      status: "failed",
+      code: safeError.code,
+      message: safeError.message,
+    });
+    return;
+  }
+
+  logEvent(result.value.status === "sent" ? "info" : "warn", "application.channel", {
+    requestId,
+    channel,
+    status: result.value.status,
+    code: result.value.status === "skipped" ? result.value.code : "DELIVERED",
+  });
 }

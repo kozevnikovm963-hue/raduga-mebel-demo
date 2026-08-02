@@ -2,7 +2,9 @@ import { readFile } from "node:fs/promises";
 import type { ApplicationInput } from "@/lib/forms/validation";
 import type { PreparedPhoto } from "@/server/forms/file-processing";
 
-export type IntegrationResult = { status: "sent" | "skipped" };
+export type IntegrationResult =
+  | { status: "sent" }
+  | { status: "skipped"; code: "CONFIG_MISSING" };
 
 function buildVkMessage(data: ApplicationInput, photos: PreparedPhoto[]): string {
   return [
@@ -25,7 +27,9 @@ export async function sendApplicationToVk(
   const receiverId = env.VK_RECEIVER_ID?.trim();
   const groupId = env.VK_GROUP_ID?.trim();
 
-  if (!token || !receiverId || !groupId) return { status: "skipped" };
+  if (!token || !receiverId || !groupId) {
+    return { status: "skipped", code: "CONFIG_MISSING" };
+  }
 
   const attachments: string[] = [];
   for (const photo of photos) {
