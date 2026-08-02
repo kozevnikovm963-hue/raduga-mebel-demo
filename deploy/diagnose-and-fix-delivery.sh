@@ -66,6 +66,43 @@ log "Protecting the environment file"
 chown "$APP_USER:$APP_USER" "$ENV_FILE"
 chmod 0600 "$ENV_FILE"
 
+log "Adding missing non-secret delivery defaults"
+node - "$ENV_FILE" <<'NODE'
+const fs = require("node:fs");
+const envPath = process.argv[2];
+const text = fs.readFileSync(envPath, "utf8");
+const existing = new Set();
+
+for (const sourceLine of text.split(/\r?\n/)) {
+  const line = sourceLine.trim();
+  if (!line || line.startsWith("#") || line.startsWith(";")) continue;
+  const equals = line.indexOf("=");
+  if (equals > 0) existing.add(line.slice(0, equals).trim());
+}
+
+const publicDefaults = [
+  ["VK_GROUP_ID", "169502771"],
+  ["SMTP_HOST", "smtp.mail.ru"],
+  ["SMTP_PORT", "465"],
+  ["SMTP_SECURE", "true"],
+  ["SMTP_USER", "korpusm2010@mail.ru"],
+  ["MAIL_FROM", "korpusm2010@mail.ru"],
+  ["MAIL_TO", "korpusm2010@mail.ru"],
+];
+const additions = publicDefaults.filter(([key]) => !existing.has(key));
+
+if (additions.length > 0) {
+  const separator = text.length > 0 && !text.endsWith("\n") ? "\n" : "";
+  const block = additions.map(([key, value]) => key + "=" + value).join("\n") + "\n";
+  fs.appendFileSync(envPath, separator + block, { mode: 0o600 });
+}
+
+for (const [key] of additions) console.log(key + ": ADDED_PUBLIC_DEFAULT");
+if (additions.length === 0) console.log("Public delivery defaults: already present");
+NODE
+chown "$APP_USER:$APP_USER" "$ENV_FILE"
+chmod 0600 "$ENV_FILE"
+
 log "Installing dependencies and rebuilding the backend"
 APP_HOME="$(getent passwd "$APP_USER" | cut -d: -f6)"
 runuser -u "$APP_USER" -- env HOME="$APP_HOME" \
